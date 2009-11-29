@@ -294,10 +294,15 @@ class PlayerWindow(pyglet.window.Window):
         self.gui_update_state()
 
     def on_draw(self):
+        for i in range(500):
+            self.do_draw()
+
+    def on_draw(self):
         self.clear()
         
         # Video
         if self.player.source and self.player.source.video_format:
+            if _profile: self.player.update_texture()
             self.player.get_texture().blit(self.video_x,
                                            self.video_y,
                                            width=self.video_width,
@@ -307,6 +312,8 @@ class PlayerWindow(pyglet.window.Window):
         self.slider.value = self.player.time
         for control in self.controls:
             control.draw()
+
+_profile = pyglet.options['profile_media']
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

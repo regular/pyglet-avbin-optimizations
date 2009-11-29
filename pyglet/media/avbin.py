@@ -41,6 +41,7 @@ __version__ = '$Id$'
 import ctypes
 import threading
 import time
+import os
 
 import pyglet
 from pyglet import gl
@@ -381,8 +382,10 @@ class AVbinSource(StreamingSource):
             self._video_timestamp = max(self._video_timestamp,
                                         video_packet.timestamp)
             self._video_packets.append(video_packet)
-            self._decode_thread.put_job(
-                lambda: self._decode_video_packet(video_packet))
+            
+            if not _profile:
+                self._decode_thread.put_job(
+                    lambda: self._decode_video_packet(video_packet))
 
             return 'video', video_packet
 
@@ -487,6 +490,11 @@ class AVbinSource(StreamingSource):
     def _decode_video_packet(self, packet):
         width = self.video_format.width
         height = self.video_format.height
+
+        if _profile and packet.id == 500:
+            print "%dx%d" % (width, height)
+            os.kill(os.getpid(),9)
+        
         pitch = width * 3
         buffer = (ctypes.c_uint8 * (pitch * height))()
         result = av.avbin_decode_video(self._video_stream, 
@@ -499,10 +507,11 @@ class AVbinSource(StreamingSource):
             
         packet.image = image_data
 
-        # Notify get_next_video_frame() that another one is ready.
-        self._condition.acquire()
-        self._condition.notify()
-        self._condition.release()
+        if not _profile:
+            # Notify get_next_video_frame() that another one is ready.
+            self._condition.acquire()
+            self._condition.notify()
+            self._condition.release()
 
     def _ensure_video_packets(self):
         '''Process packets until a video packet has been queued (and begun
@@ -539,15 +548,22 @@ class AVbinSource(StreamingSource):
 
         if self._ensure_video_packets():
             packet = self._video_packets.pop(0)
-            if _debug:
-                print 'Waiting for', packet
+            
+            if not _profile:
+                if _debug:
+                    print 'Waiting for', packet
 
-            # Block until decoding is complete
-            self._condition.acquire()
-            while packet.image == 0:
-                self._condition.wait()
-            self._condition.release()
+                # Block until decoding is complete
+                self._condition.acquire()
+                while packet.image == 0:
+                    self._condition.wait()
+                self._condition.release()
 
+            else:
+                # when we are profiling, the main thread
+                # does all the work
+                self._decode_video_packet(packet)
+                
             if _debug:
                 print 'Returning', packet
             return packet.image
@@ -560,4 +576,5 @@ else:
     _debug = False
     av.avbin_set_log_level(AVBIN_LOG_QUIET)
 
+_profile = pyglet.options['profile_media']
 _have_frame_rate = av.avbin_have_feature('frame_rate')

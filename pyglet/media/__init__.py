@@ -83,6 +83,7 @@ import StringIO
 import pyglet
 
 _debug = pyglet.options['debug_media']
+_profile = pyglet.options['profile_media']
 
 class MediaException(Exception):
     pass
@@ -992,7 +993,10 @@ class Player(pyglet.event.EventDispatcher):
                     period = 1. / self.source.video_format.frame_rate
                 else:
                     period = 1. / 30.
-                pyglet.clock.schedule_interval(self.update_texture, period)
+                if _profile:
+                    pyglet.clock.schedule(lambda dt: None)
+                else:
+                    pyglet.clock.schedule_interval(self.update_texture, period)
         else:
             if self._audio_player:
                 self._audio_player.stop()
@@ -1117,23 +1121,26 @@ class Player(pyglet.event.EventDispatcher):
         self.seek(time)
 
     def update_texture(self, dt=None, time=None):
-        if time is None:
-            time = self._audio_player.get_time()
-        if time is None:
-            return
+        if _profile:
+            ts = 0
+        else:
+            if time is None:
+                time = self._audio_player.get_time()
+            if time is None:
+                return
 
-        if (self._last_video_timestamp is not None and 
-            time <= self._last_video_timestamp):
-            return
+            if (self._last_video_timestamp is not None and 
+                time <= self._last_video_timestamp):
+                return
 
-        ts = self._groups[0].get_next_video_timestamp()
-        while ts is not None and ts < time:
-            self._groups[0].get_next_video_frame() # Discard frame
             ts = self._groups[0].get_next_video_timestamp()
+            while ts is not None and ts < time:
+                self._groups[0].get_next_video_frame() # Discard frame
+                ts = self._groups[0].get_next_video_timestamp()
 
-        if ts is None:
-            self._last_video_timestamp = None
-            return
+            if ts is None:
+                self._last_video_timestamp = None
+                return
 
         image = self._groups[0].get_next_video_frame()
         if image is not None:
