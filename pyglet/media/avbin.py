@@ -525,14 +525,9 @@ class AVbinSource(StreamingSource):
             # Read ahead until we have another video packet
             self._get_packet()
             packet_type, _ = self._process_packet()
-            while packet_type and packet_type != 'video':
+            while packet_type != 'video':
                 self._get_packet()
                 packet_type, _ = self._process_packet()
-            if not packet_type:
-                return False
-
-            if _debug:
-                print 'Queued packet', _
         return True
 
     def get_next_video_timestamp(self):
