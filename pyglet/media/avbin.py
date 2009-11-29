@@ -371,6 +371,8 @@ class AVbinSource(StreamingSource):
                 # some containers (OGG?).  See
                 # http://www.dranger.com/ffmpeg/tutorial05.html
                 # For now we just drop these frames.
+                if _debug:
+                    print "B-frame problem, dropped frame."
                 return None, None
 
             video_packet = VideoPacket(self._packet)
