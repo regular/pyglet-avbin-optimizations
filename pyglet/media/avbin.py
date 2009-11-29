@@ -283,7 +283,7 @@ class AVbinSource(StreamingSource):
             elif (info.type == AVBIN_STREAM_TYPE_AUDIO and
                   info.u.audio.sample_bits in (8, 16) and
                   info.u.audio.channels in (1, 2) and 
-                  not self._audio_stream):
+                  not self._audio_stream and not _profile):
 
                 stream = av.avbin_open_stream(self._file, i)
                 if not stream:
