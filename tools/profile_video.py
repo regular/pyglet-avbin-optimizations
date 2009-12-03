@@ -44,6 +44,11 @@ import pyglet
 pyglet.options['profile_media'] = True
 pyglet.options['vsync'] = False
 
+try:
+    import cProfile as profile
+except ImportError:
+    import profile
+import pstats
 
 import sys, os
 from pyglet.gl import *
@@ -298,12 +303,14 @@ class PlayerWindow(pyglet.window.Window):
         self.gui_update_state()
 
     def on_draw(self):
+        self.render_many_frames()
+
+    def render_many_frames(self):
         for i in range(500):
             self.do_draw()
             self.flip()
-
-        os.kill(os.getpid(),9)
-
+        pyglet.app.exit()
+        
     def do_draw(self):
         self.clear()
         
@@ -346,5 +353,6 @@ if __name__ == '__main__':
         player.play()
         window.gui_update_state()
 
-
-    pyglet.app.run()
+    profile.run("pyglet.app.run()", "profiling.result")
+    p = pstats.Stats("profiling.result")
+    p.strip_dirs().sort_stats('time').print_stats(10)

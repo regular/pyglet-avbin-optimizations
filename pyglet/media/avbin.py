@@ -38,11 +38,14 @@
 __docformat__ = 'restructuredtext'
 __version__ = '$Id$'
 
+import pyglet
+_profile = pyglet.options['profile_media']
+
+
 import ctypes
 import threading
 import time
 
-import pyglet
 from pyglet import gl
 from pyglet.gl import gl_info
 from pyglet import image
@@ -179,7 +182,7 @@ av.avbin_decode_video.argtypes = [AVbinStreamP,
     ctypes.c_void_p]
 
 
-if True:
+if not _profile:
     # XXX lock all avbin calls.  not clear from ffmpeg documentation if this
     # is necessary.  leaving it on while debugging to rule out the possiblity
     # of a problem.
@@ -568,5 +571,4 @@ else:
     _debug = False
     av.avbin_set_log_level(AVBIN_LOG_QUIET)
 
-_profile = pyglet.options['profile_media']
 _have_frame_rate = av.avbin_have_feature('frame_rate')
