@@ -559,53 +559,50 @@ class AVbinSource(StreamingSource):
         result = self._decode_video(packet.data, packet.size)
 
         if result < 0:
-            packet.status = None
-            if not _profile:_avbin_lock.release()
-            return
+            packet.image = None
+        else:
+            frame = self._video_stream[0].frame[0]
 
-        frame = self._video_stream[0].frame[0]
-
-        # for yuv420p
-        # We assume U and V pitches are exactly half of Y pitch
-        # So w can minimize the calls to memmove that are necessary to
-        # create a memory layout like this:
+            # for yuv420p
+            # We assume U and V pitches are exactly half of Y pitch
+            # So w can minimize the calls to memmove that are necessary to
+            # create a memory layout like this:
         
-            # YYYYYYYY
-            # YYYYYYYY
-            # YYYYYYYY
-            # YYYYYYYY
-            # UUUUUUUU
-            # VVVVVVVV
+                # YYYYYYYY
+                # YYYYYYYY
+                # YYYYYYYY
+                # YYYYYYYY
+                # UUUUUUUU
+                # VVVVVVVV
 
-        assert frame.linesize[0] == frame.linesize[1] * 2     
-        assert frame.linesize[0] == frame.linesize[2] * 2     
+            assert frame.linesize[0] == frame.linesize[1] * 2     
+            assert frame.linesize[0] == frame.linesize[2] * 2     
 
-        width = self.video_format.width
-        height = self.video_format.height
+            width = self.video_format.width
+            height = self.video_format.height
 
-        y_size = height * frame.linesize[0]   
-        y_buff = frame.data[0]
+            y_size = height * frame.linesize[0]   
+            y_buff = frame.data[0]
 
-        u_size = height//2 * frame.linesize[1]     
-        u_buff = frame.data[1]
+            u_size = height//2 * frame.linesize[1]     
+            u_buff = frame.data[1]
 
-        v_size = (height//2 * frame.linesize[2])        
-        v_buff = frame.data[2]
+            v_size = (height//2 * frame.linesize[2])        
+            v_buff = frame.data[2]
                                       
-        buff_size = frame.linesize[0] * (height + height // 2)
-        buff = (ctypes.c_ubyte * buff_size)()
-        ctypes.memmove(buff, y_buff, y_size)
-        ctypes.memmove(ctypes.addressof(buff) + y_size, u_buff, u_size)
-        ctypes.memmove(ctypes.addressof(buff)+ y_size + u_size, v_buff, v_size)
+            buff_size = frame.linesize[0] * (height + height // 2)
+            buff = (ctypes.c_ubyte * buff_size)()
+            ctypes.memmove(buff, y_buff, y_size)
+            ctypes.memmove(ctypes.addressof(buff) + y_size, u_buff, u_size)
+            ctypes.memmove(ctypes.addressof(buff)+ y_size + u_size, v_buff, v_size)
         
-        packet.image = image.ImageData(
-            frame.linesize[0], height + height//2, 'L', 
-            buff, frame.linesize[0]
-        )
+            packet.image = image.ImageData(
+                frame.linesize[0], height + height//2, 'L', 
+                buff, frame.linesize[0]
+            )
     
-        if not _profile: _avbin_lock.release()
-        
         if not _profile:            
+            _avbin_lock.release()
             # Notify get_next_video_frame() that another one is ready.
             self._condition.acquire()
             self._condition.notify()
@@ -619,8 +616,7 @@ class AVbinSource(StreamingSource):
         height = self.video_format.height
         stream = self._video_stream
     
-        print av.avcodec_get_pix_fmt_name(0)
-        #stream[0].codec_context[0].pix_fmt)
+        #print av.avcodec_get_pix_fmt_name(stream[0].codec_context[0].pix_fmt)
     
         got_picture = ctypes.c_int()
         used = av.avcodec_decode_video(stream[0].codec_context, 
