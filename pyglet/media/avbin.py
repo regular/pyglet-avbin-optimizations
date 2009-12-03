@@ -57,6 +57,71 @@ from pyglet.media import \
 av = pyglet.lib.load_library('avbin', 
                              darwin='/usr/local/lib/libavbin.dylib')
 
+# libavcodec internals as of revision 13661
+# These may change in future versions
+
+class AVRational(ctypes.Structure):
+	_fields_ = [
+        ('num', ctypes.c_int),
+        ('den', ctypes.c_int),
+	]
+
+class AVCodecContext(ctypes.Structure):
+	_fields_ = [
+        ('av_class', ctypes.c_void_p),
+        ('bit_rate', ctypes.c_int),
+        ('bit_rate_tolerance', ctypes.c_int),
+        ('flags', ctypes.c_int),
+        ('sub_id', ctypes.c_int),
+        ('me_method', ctypes.c_int),
+        ('extradata', ctypes.POINTER(ctypes.c_ubyte)),
+        ('extradata_size', ctypes.c_int),
+        ('time_base', AVRational),
+        ('width', ctypes.c_int),
+        ('height', ctypes.c_int),
+        ('gop_size', ctypes.c_int),
+        ('pix_fmt', ctypes.c_int),
+		# more fields skipped
+    ]
+
+class AVFrame(ctypes.Structure):
+    _fields_ = [
+        ('data', ctypes.POINTER(ctypes.c_ubyte) * 4),
+        ('linesize', ctypes.c_int * 4),
+        # more fields skipped
+    ]
+
+# int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
+#     int *got_picture_ptr,
+#     const uint8_t *buf, int buf_size);
+
+av.avcodec_decode_video.restype = ctypes.c_int
+av.avcodec_decode_video.argtypes = [ctypes.c_void_p, 
+    ctypes.POINTER(AVFrame), ctypes.POINTER(ctypes.c_int), ctypes.c_void_p, ctypes.c_size_t]
+    
+# const char *avcodec_get_pix_fmt_name(int pix_fmt);
+av.avcodec_get_pix_fmt_name.restype = ctypes.c_char_p
+av.avcodec_get_pix_fmt_name.argtypes = [ctypes.c_int]
+
+# int avcodec_get_pix_fmt(const char* name);
+av.avcodec_get_pix_fmt.restype = ctypes.c_int
+av.avcodec_get_pix_fmt.argtypes = [ctypes.c_char_p]
+
+# AVbin interal stream repesentation (non public, probably unstable)
+# as of version 7 
+
+class AVbinStream(ctypes.Structure):
+    _fields_ = [
+        ('type', ctypes.c_int),
+        ('format_context', ctypes.c_void_p),
+        ('codec_context', ctypes.POINTER(AVCodecContext)),
+        ('frame', ctypes.POINTER(AVFrame)),
+    ]
+
+AVbinStreamP = ctypes.POINTER(AVbinStream)
+
+### end of unstable APIs
+
 AVBIN_RESULT_ERROR = -1
 AVBIN_RESULT_OK = 0
 AVbinResult = ctypes.c_int
@@ -166,7 +231,7 @@ av.avbin_file_info.argtypes = [AVbinFileP, ctypes.POINTER(AVbinFileInfo)]
 av.avbin_stream_info.argtypes = [AVbinFileP, ctypes.c_int,
                                  ctypes.POINTER(AVbinStreamInfo8)]
 
-av.avbin_open_stream.restype = ctypes.c_void_p
+av.avbin_open_stream.restype = AVbinStreamP
 av.avbin_open_stream.argtypes = [AVbinFileP, ctypes.c_int]
 av.avbin_close_stream.argtypes = [AVbinStreamP]
 
