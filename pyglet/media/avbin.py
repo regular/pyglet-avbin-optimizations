@@ -41,7 +41,6 @@ __version__ = '$Id$'
 import ctypes
 import threading
 import time
-import os
 
 import pyglet
 from pyglet import gl
@@ -492,10 +491,6 @@ class AVbinSource(StreamingSource):
     def _decode_video_packet(self, packet):
         width = self.video_format.width
         height = self.video_format.height
-
-        if _profile and packet.id == 500:
-            print "%dx%d" % (width, height)
-            os.kill(os.getpid(),9)
         
         pitch = width * 3
         buffer = (ctypes.c_uint8 * (pitch * height))()

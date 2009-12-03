@@ -39,10 +39,14 @@
 __docformat__ = 'restructuredtext'
 __version__ = '$Id: $'
 
-import sys
 
-from pyglet.gl import *
 import pyglet
+pyglet.options['profile_media'] = True
+pyglet.options['vsync'] = False
+
+
+import sys, os
+from pyglet.gl import *
 from pyglet.window import key
 
 def draw_rect(x, y, width, height):
@@ -294,10 +298,18 @@ class PlayerWindow(pyglet.window.Window):
         self.gui_update_state()
 
     def on_draw(self):
+        for i in range(500):
+            self.do_draw()
+            self.flip()
+
+        os.kill(os.getpid(),9)
+
+    def do_draw(self):
         self.clear()
         
         # Video
         if self.player.source and self.player.source.video_format:
+            self.player.update_texture()
             self.player.get_texture().blit(self.video_x,
                                            self.video_y,
                                            width=self.video_width,
@@ -310,7 +322,7 @@ class PlayerWindow(pyglet.window.Window):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print 'Usage: media_player.py <filename> [<filename> ...]'
+        print 'Usage:  profile_video.py <filename> [<filename> ...]'
         sys.exit(1)
 
     have_video = False
@@ -323,6 +335,9 @@ if __name__ == '__main__':
         player.queue(source)
 
         have_video = have_video or bool(source.video_format)
+        if not have_video:
+            print "No video stream found on %s -- exiting." % filename
+            sys.exit(1)
 
         window.gui_update_source()
         window.set_default_video_size()
@@ -331,7 +346,5 @@ if __name__ == '__main__':
         player.play()
         window.gui_update_state()
 
-    if not have_video:
-        pyglet.clock.schedule_interval(lambda dt: None, 0.2)
 
     pyglet.app.run()
