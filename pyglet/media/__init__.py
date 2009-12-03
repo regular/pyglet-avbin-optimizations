@@ -1102,12 +1102,15 @@ class Player(pyglet.event.EventDispatcher):
 
     time = property(_get_time)
 
-    def _create_texture(self):
+    def _create_texture(self, width = None, height = None):
         video_format = self.source.video_format
-        self._texture = pyglet.image.Texture.create(
-            video_format.width, video_format.height, rectangle=True)
-        self._texture = self._texture.get_transform(flip_y=True)
-        self._texture.anchor_y = 0
+        if width is None: width = video_format.width
+        if height is None: height = video_format.height
+        tex = pyglet.image.Texture.create(
+            width, height, rectangle=True, internalformat=pyglet.gl.GL_LUMINANCE8)
+        tex = tex.get_transform(flip_y=True)
+        tex.anchor_y = 0
+        self._texture = tex
 
     def get_texture(self):
         return self._texture
@@ -1144,8 +1147,8 @@ class Player(pyglet.event.EventDispatcher):
 
         image = self._groups[0].get_next_video_frame()
         if image is not None:
-            if self._texture is None:
-                self._create_texture()
+            if self._texture is None or image.width != self._texture.width or image.height != self._texture.height:
+                self._create_texture(image.width, image.height)
             self._texture.blit_into(image, 0, 0, 0)
             self._last_video_timestamp = ts
 
