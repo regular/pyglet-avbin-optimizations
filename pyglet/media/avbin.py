@@ -521,10 +521,12 @@ class AVbinSource(StreamingSource):
             if _debug:
                 print 'No video packets...'
             # Read ahead until we have another video packet
-            self._get_packet()
+            if not self._get_packet():
+                return False
             packet_type, _ = self._process_packet()
             while packet_type != 'video':
-                self._get_packet()
+                if not self._get_packet():
+                    return False    
                 packet_type, _ = self._process_packet()
         return True
 
