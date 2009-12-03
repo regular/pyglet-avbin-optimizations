@@ -43,6 +43,7 @@ __version__ = '$Id: $'
 import pyglet
 pyglet.options['profile_media'] = True
 pyglet.options['vsync'] = False
+_fullscreen = True
 
 try:
     import cProfile as profile
@@ -164,7 +165,8 @@ class PlayerWindow(pyglet.window.Window):
     def __init__(self, player):
         super(PlayerWindow, self).__init__(caption='Media Player',
                                            visible=False, 
-                                           resizable=True)
+                                           resizable=True,
+                                           fullscreen=_fullscreen)
         self.player = player
         self.player.push_handlers(self)
         # TODO compat #self.player.eos_action = self.player.EOS_PAUSE
@@ -251,7 +253,8 @@ class PlayerWindow(pyglet.window.Window):
         video_width, video_height = self.get_video_size()
         width = max(width, video_width)
         height += video_height
-        self.set_size(int(width), int(height))
+        if not _fullscreen:
+            self.set_size(int(width), int(height))
 
     def on_resize(self, width, height):
         '''Position and size video image.'''
