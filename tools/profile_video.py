@@ -54,6 +54,8 @@ import pstats
 import sys, os
 from pyglet.gl import *
 from pyglet.window import key
+from optparse import OptionParser
+
 
 def draw_rect(x, y, width, height):
     glBegin(GL_LINE_LOOP)
@@ -309,7 +311,7 @@ class PlayerWindow(pyglet.window.Window):
         self.render_many_frames()
 
     def render_many_frames(self):
-        for i in range(500):
+        for i in range(options.framecount):
             self.do_draw()
             self.flip()
         pyglet.app.exit()
@@ -331,30 +333,37 @@ class PlayerWindow(pyglet.window.Window):
             control.draw()
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print 'Usage:  profile_video.py <filename> [<filename> ...]'
-        sys.exit(1)
+    global options
+    usage = "usage: %prog [options] <filename>"
+    description = "decodes a given number of frames from a video stream and outputs profiling information."
+    parser = OptionParser(usage=usage, description=description)
+    parser.add_option("-f", "--frames", dest="framecount", default=500, type="int",
+        help="number of video frames to decode")
+    (options, args) = parser.parse_args()
+
+    if len(args)<1:
+        parser.error("no video file specified")
 
     have_video = False
 
-    for filename in sys.argv[1:]:
-        player = pyglet.media.Player()
-        window = PlayerWindow(player)
+    filename = args[0]
+    player = pyglet.media.Player()
+    window = PlayerWindow(player)
 
-        source = pyglet.media.load(filename)
-        player.queue(source)
+    source = pyglet.media.load(filename)
+    player.queue(source)
 
-        have_video = have_video or bool(source.video_format)
-        if not have_video:
-            print "No video stream found on %s -- exiting." % filename
-            sys.exit(1)
+    have_video = have_video or bool(source.video_format)
+    if not have_video:
+        print "No video stream found on %s -- exiting." % filename
+        sys.exit(1)
 
-        window.gui_update_source()
-        window.set_default_video_size()
-        window.set_visible(True)
+    window.gui_update_source()
+    window.set_default_video_size()
+    window.set_visible(True)
 
-        player.play()
-        window.gui_update_state()
+    player.play()
+    window.gui_update_state()
 
     profile.run("pyglet.app.run()", "profiling.result")
     p = pstats.Stats("profiling.result")
