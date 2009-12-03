@@ -43,7 +43,6 @@ __version__ = '$Id: $'
 import pyglet
 pyglet.options['profile_media'] = True
 pyglet.options['vsync'] = False
-_fullscreen = True
 
 try:
     import cProfile as profile
@@ -168,7 +167,7 @@ class PlayerWindow(pyglet.window.Window):
         super(PlayerWindow, self).__init__(caption='Media Player',
                                            visible=False, 
                                            resizable=True,
-                                           fullscreen=_fullscreen)
+                                           fullscreen=options.fullscreen)
         self.player = player
         self.player.push_handlers(self)
         # TODO compat #self.player.eos_action = self.player.EOS_PAUSE
@@ -255,7 +254,7 @@ class PlayerWindow(pyglet.window.Window):
         video_width, video_height = self.get_video_size()
         width = max(width, video_width)
         height += video_height
-        if not _fullscreen:
+        if not options.fullscreen:
             self.set_size(int(width), int(height))
 
     def on_resize(self, width, height):
@@ -339,6 +338,9 @@ if __name__ == '__main__':
     parser = OptionParser(usage=usage, description=description)
     parser.add_option("-f", "--frames", dest="framecount", default=500, type="int",
         help="number of video frames to decode")
+    parser.add_option("-w", "--windowed", dest="fullscreen", default=True, action="store_false",
+        help="run windowed.")
+
     (options, args) = parser.parse_args()
 
     if len(args)<1:
@@ -364,6 +366,9 @@ if __name__ == '__main__':
 
     player.play()
     window.gui_update_state()
+
+    video_format = source.video_format
+    print "video resolution: %dx%d" % (video_format.width, video_format.height)
 
     profile.run("pyglet.app.run()", "profiling.result")
     p = pstats.Stats("profiling.result")
