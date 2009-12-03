@@ -367,9 +367,10 @@ if __name__ == '__main__':
     player.play()
     window.gui_update_state()
 
-    video_format = source.video_format
-    print "video resolution: %dx%d" % (video_format.width, video_format.height)
-
     profile.run("pyglet.app.run()", "profiling.result")
     p = pstats.Stats("profiling.result")
+
+    video_format = source.video_format
+    print "video resolution: %dx%d, frames rendered: %d fps: %.2f" % (video_format.width, video_format.height, options.framecount, options.framecount / p.total_tt)
+
     p.strip_dirs().sort_stats('time').print_stats(10)
