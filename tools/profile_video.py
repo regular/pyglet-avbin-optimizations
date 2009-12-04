@@ -371,6 +371,6 @@ if __name__ == '__main__':
     p = pstats.Stats("profiling.result")
 
     video_format = source.video_format
-    print "video resolution: %dx%d, frames rendered: %d fps: %.2f" % (video_format.width, video_format.height, options.framecount, options.framecount / p.total_tt)
+    print "%.10s %4.2f fps" % (("%dx%d" % (video_format.width, video_format.height)), options.framecount / p.total_tt)
 
     p.strip_dirs().sort_stats('time').print_stats(10)
