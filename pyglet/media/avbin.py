@@ -40,6 +40,7 @@ __version__ = '$Id$'
 
 import pyglet
 _profile = pyglet.options['profile_media']
+_multithreaded = True
 
 
 import ctypes
@@ -245,7 +246,7 @@ av.avbin_decode_video.argtypes = [AVbinStreamP,
     ctypes.c_void_p]
 
 
-if not _profile:
+if _multithreaded:
     # XXX lock all avbin calls.  not clear from ffmpeg documentation if this
     # is necessary.  leaving it on while debugging to rule out the possiblity
     # of a problem.
@@ -450,7 +451,7 @@ class AVbinSource(StreamingSource):
                                         video_packet.timestamp)
             self._video_packets.append(video_packet)
             
-            if not _profile:
+            if _multithreaded:
                 self._decode_thread.put_job(
                     lambda: self._decode_video_packet(video_packet))
 
@@ -555,7 +556,7 @@ class AVbinSource(StreamingSource):
             return AudioData(buffer, len(buffer), timestamp, duration, []) 
 
     def _decode_video_packet(self, packet):
-        if not _profile: _avbin_lock.acquire()
+        if _multithreaded: _avbin_lock.acquire()
         result = self._decode_video(packet.data, packet.size)
 
         if result < 0:
@@ -601,7 +602,7 @@ class AVbinSource(StreamingSource):
                 buff, frame.linesize[0]
             )
     
-        if not _profile:            
+        if _multithreaded:            
             _avbin_lock.release()
             # Notify get_next_video_frame() that another one is ready.
             self._condition.acquire()
@@ -660,7 +661,7 @@ class AVbinSource(StreamingSource):
         if self._ensure_video_packets():
             packet = self._video_packets.pop(0)
             
-            if not _profile:
+            if _multithreaded:
                 if _debug:
                     print 'Waiting for', packet
 
