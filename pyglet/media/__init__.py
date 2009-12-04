@@ -222,6 +222,12 @@ class WorkerThread(MediaThread):
         self.condition.notify()
         self.condition.release()
 
+    def get_num_jobs(self):
+        self.condition.acquire()
+        result = len(self._jobs)
+        self.condition.release()
+        return result
+
     def _empty(self):
         return not self._jobs
 
@@ -233,6 +239,25 @@ class WorkerThread(MediaThread):
 
     def _clear(self):
         del self._jobs[:]
+
+class WorkerThreadPool(object):
+    def __init__(self, num_threads):
+        self._threads = [WorkerThread() for x in range(num_threads)]
+        
+    def _foreach(self, method_name):
+        for t in self._threads:
+            getattr(t, method_name)()
+    
+    def start(self):
+        self._foreach("start")
+
+    def stop(self):
+        self._foreach("stop")
+        
+    def put_job(self, job):
+        l = [(t.get_num_jobs(), t) for t in self._threads]
+        l.sort()
+        l[0][1].put_job(job)
 
 class AudioFormat(object):
     '''Audio details.

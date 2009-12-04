@@ -41,6 +41,7 @@ __version__ = '$Id$'
 import pyglet
 _profile = pyglet.options['profile_media']
 _multithreaded = True
+_num_cores = 2
 
 
 import ctypes
@@ -53,7 +54,7 @@ from pyglet import image
 import pyglet.lib
 from pyglet.media import \
     MediaFormatException, StreamingSource, VideoFormat, AudioFormat, \
-    AudioData, MediaEvent, WorkerThread, SourceInfo
+    AudioData, MediaEvent, WorkerThreadPool, SourceInfo
 
 av = pyglet.lib.load_library('avbin', 
                              darwin='/usr/local/lib/libavbin.dylib')
@@ -378,7 +379,7 @@ class AVbinSource(StreamingSource):
             
         if self.video_format:
             self._video_packets = []
-            self._decode_thread = WorkerThread()
+            self._decode_thread = WorkerThreadPool(_num_cores)
             self._decode_thread.start()
             self._condition = threading.Condition()
 
@@ -632,9 +633,13 @@ class AVbinSource(StreamingSource):
         '''Process packets until a video packet has been queued (and begun
         decoding).  Return False if EOS.
         '''
-        if not self._video_packets:
+        n = 1
+        if _multithreaded:
+            n = _num_cores 
+        
+        while len(self._video_packets) < n: 
             if _debug:
-                print 'No video packets...'
+                print 'Not enough video packets...'
             # Read ahead until we have another video packet
             if not self._get_packet():
                 return False
